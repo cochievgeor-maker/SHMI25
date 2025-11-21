@@ -357,11 +357,11 @@ def run_calculation_interactive():
     if not calculation:
         calculation = 'sp'
 
-    charge_str = input("Molecular charge (default: 0): ").strip()
-    charge = int(charge_str) if charge_str else 0
+    print("Molecular charge default: 0")
+    charge = 0
 
-    spin_str = input("Spin multiplicity (default: 1): ").strip()
-    spin = int(spin_str) if spin_str else 1
+    print("Spin multiplicity default: 1")
+    spin = 1
 
     solvent = input("Solvent for GBSA model (e.g., water, methanol) [optional]: ").strip()
     if not solvent:
@@ -398,6 +398,7 @@ def run_calculation_interactive():
                 print(f"Total Energy: {results['total_energy']:.6f} {results.get('energy_units', 'Eh')}")
             if 'homo_lumo_gap' in results:
                 print(f"HOMO-LUMO Gap: {results['homo_lumo_gap']:.4f} {results.get('gap_units', 'eV')}")
+            return results
         else:
             print("No results obtained from calculation")
 
@@ -579,6 +580,9 @@ def display_single_color(rgb, color_name="Color", size=(5, 2)):
     plt.tight_layout()
     plt.show()
 
+
+def homo_lumo_color():
+    res = run_calculation_interactive()
 # -*- coding: utf-8 -*-
 """Stable Diffusion с выбором моделей"""
 
