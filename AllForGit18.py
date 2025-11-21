@@ -599,12 +599,16 @@ def save_name_tuple(name, tuple_data, filename="data.txt"):
     except Exception as e:
         print(f"Ошибка сохранения: {e}")
 
-def parse_colors(filename="colors.txt"):
+def parse_name_tuples(filename="data.txt"):
     """
-    Парсит файл и возвращает словарь {имя: кортеж_RGB}
-    Гарантирует, что все значения - кортежи из 3 чисел
+    Парсит файл и возвращает словарь {name: tuple}
     """
-    colors_dict = {}
+    # Проверяем существование файла перед парсингом
+    if not os.path.exists(filename):
+        print(f"Файл '{filename}' не существует.")
+        return {}
+    
+    result = {}
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             for line_num, line in enumerate(file, 1):
@@ -614,33 +618,17 @@ def parse_colors(filename="colors.txt"):
                     name = name.strip()
                     tuple_str = tuple_str.strip()
                     
+                    # Парсим tuple из строки
                     try:
-                        # Парсим кортеж
+                        import ast
                         parsed_data = ast.literal_eval(tuple_str)
-                        
-                        # Преобразуем в tuple если нужно
                         if not isinstance(parsed_data, tuple):
                             parsed_data = tuple(parsed_data)
-                        
-                        # Проверяем, что это кортеж из 3 чисел
-                        if (isinstance(parsed_data, tuple) and 
-                            len(parsed_data) == 3 and 
-                            all(isinstance(x, (int, float)) for x in parsed_data)):
-                            
-                            # Конвертируем в целые числа если нужно
-                            rgb_tuple = tuple(int(x) for x in parsed_data)
-                            colors_dict[name] = rgb_tuple
-                        else:
-                            print(f"Пропущена строка {line_num}: неверный формат RGB")
-                            
+                        result[name] = parsed_data
                     except (ValueError, SyntaxError) as e:
-                        print(f"Ошибка парсинга в строке {line_num}: {e}")
+                        print(f"Ошибка парсинга tuple в строке {line_num}: {e}")
                         continue
-                        
-        return colors_dict
-    except FileNotFoundError:
-        print(f"Файл {filename} не найден")
-        return {}
+        return result
     except Exception as e:
         print(f"Ошибка чтения: {e}")
         return {}
@@ -913,5 +901,5 @@ def quick_color_restore(image_path, colors_to_restore):
     return result_img
     
 def painter(picture_path):
-    color_data = parse_colors(log_file_name)
+    color_data = parse_name_tuples(log_file_name)
     quick_color_restore(picture_path, color_data)
