@@ -645,7 +645,7 @@ def parse_colors(filename="colors.txt"):
         print(f"Ошибка чтения: {e}")
         return {}
         
-log_file_name = os.path.join("./output/", "log")
+log_file_name = os.path.join("./", "log.txt")
 
 def homo_lumo_color():
     smiles = input("Введите SMILES строку (например, CCO для этанола): ").strip()
