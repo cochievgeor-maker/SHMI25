@@ -584,24 +584,76 @@ def display_single_color(rgb, color_name="Color", size=(5, 2), save_path = None)
 
     plt.show()
 
-def save_name_vector(name, vector, filename="data.txt"):
+def save_name_tuple(name, tuple_data, filename="data.txt"):
     """
-    Сохраняет пару name:vector в файл
+    Сохраняет пару name:tuple в файл
     """
     try:
+        # Проверяем существование файла
+        if not os.path.exists(filename):
+            print(f"Файл '{filename}' не существует. Создаем новый.")
+        
         with open(filename, 'a', encoding='utf-8') as file:
-            # Преобразуем вектор в строку и сохраняем
-            vector_str = str(vector).replace('\n', ' ')
-            file.write(f"{name}: {vector_str}\n")
-        print(f"Сохранено: {name}: {vector}")
+            file.write(f"{name}: {tuple_data}\n")
+        print(f"Сохранено: {name}: {tuple_data}")
     except Exception as e:
         print(f"Ошибка сохранения: {e}")
+
+def parse_colors(filename="colors.txt"):
+    """
+    Парсит файл и возвращает словарь {имя: кортеж_RGB}
+    Гарантирует, что все значения - кортежи из 3 чисел
+    """
+    colors_dict = {}
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            for line_num, line in enumerate(file, 1):
+                line = line.strip()
+                if line and ':' in line:
+                    name, tuple_str = line.split(':', 1)
+                    name = name.strip()
+                    tuple_str = tuple_str.strip()
+                    
+                    try:
+                        # Парсим кортеж
+                        parsed_data = ast.literal_eval(tuple_str)
+                        
+                        # Преобразуем в tuple если нужно
+                        if not isinstance(parsed_data, tuple):
+                            parsed_data = tuple(parsed_data)
+                        
+                        # Проверяем, что это кортеж из 3 чисел
+                        if (isinstance(parsed_data, tuple) and 
+                            len(parsed_data) == 3 and 
+                            all(isinstance(x, (int, float)) for x in parsed_data)):
+                            
+                            # Конвертируем в целые числа если нужно
+                            rgb_tuple = tuple(int(x) for x in parsed_data)
+                            colors_dict[name] = rgb_tuple
+                        else:
+                            print(f"Пропущена строка {line_num}: неверный формат RGB")
+                            
+                    except (ValueError, SyntaxError) as e:
+                        print(f"Ошибка парсинга в строке {line_num}: {e}")
+                        continue
+                        
+        return colors_dict
+    except FileNotFoundError:
+        print(f"Файл {filename} не найден")
+        return {}
+    except Exception as e:
+        print(f"Ошибка чтения: {e}")
+        return {}
+        
+log_file_name = os.path.join("./output/", "log")
 
 def homo_lumo_color():
     smiles = input("Введите SMILES строку (например, CCO для этанола): ").strip()
     res = run_calculation_interactive(smiles)
     re = gap_to_wavenumber_and_color(res["homo_lumo_gap_hartree"])
-    # save_name_vector(smiles, re['rgb_color'])
+
+    save_name_tuple(smiles, re['rgb_color'], filename = log_file_name)
+    
     display_single_color(re['rgb_color'], save_path = os.path.join("./output/", smiles))
     return re['rgb_color']
 # -*- coding: utf-8 -*-
@@ -805,50 +857,61 @@ from PIL import Image
 
 def quick_color_restore(image_path, colors_to_restore):
     """
-    Быстрое восстановление нескольких цветов за один раз с использованием скалярного произведения
-
+    Быстрое восстановление нескольких цветов за один раз
+    
     Args:
         image_path (str): путь к изображению
-        colors_to_restore (list): список словарей с цветами
-            Пример: [{'rgb': (255,0,0)}, {'rgb': (0,255,0)}]
+        colors_to_restore (dict): словарь с цветами в формате имя:кортеж_RGB
     """
     original_img = Image.open(image_path).convert('RGB')
-    img_array = np.array(original_img).astype(np.float32)
-
+    img_array = np.array(original_img)
+    
     # Создаем черно-белую версию
     bw_array = np.dot(img_array[...,:3], [0.0, 0.0, 0.0])
     bw_array = np.stack([bw_array, bw_array, bw_array], axis=-1).astype(np.uint8)
     result_array = bw_array.copy()
-
+    
+    # Восстанавливаем все указанные цвета
     total_mask = np.zeros(img_array.shape[:2], dtype=bool)
-
-    cosine_threshold = 0.9
-
-    for color_info in colors_to_restore:
-        target_rgb = np.array(color_info['rgb'], dtype=np.float32)
-
-        # Нормализуем целевой цвет
+    
+    # Проверяем тип данных и обрабатываем соответствующим образом
+    if isinstance(colors_to_restore, dict):
+        # Если передан словарь
+        color_items = colors_to_restore.items()
+    elif isinstance(colors_to_restore, (list, tuple)):
+        # Если передан список или кортеж, преобразуем в словарь
+        colors_dict = {}
+        for i, item in enumerate(colors_to_restore):
+            if isinstance(item, dict):
+                colors_dict.update(item)
+        color_items = colors_dict.items()
+    else:
+        raise ValueError("colors_to_restore должен быть словарем или списком/кортежем словарей")
+    Smiles = []
+    # Пробегаемся по всем элементам
+    for color_name, target_rgb in color_items:
+        # Преобразуем в numpy array
+        target_rgb = np.array(target_rgb)
+        
+        # Нормализуем векторы для косинусного сходства
+        img_norm = np.linalg.norm(img_array, axis=2)
         target_norm = np.linalg.norm(target_rgb)
-        if target_norm == 0:
-            continue
-
-        target_unit = target_rgb / target_norm
-
-        # Нормализуем все пиксели
-        pixel_norms = np.linalg.norm(img_array, axis=2)
-        safe_norms = np.maximum(pixel_norms, 1e-8)
-        img_normalized = img_array / safe_norms[:, :, np.newaxis]
-
-        # Вычисляем скалярное произведение между нормализованными пикселями и целевым цветом
-        cosine_similarity = np.sum(img_normalized * target_unit, axis=2)
-
-        # Применяем отсечку по косинусной схожести
-        mask = cosine_similarity >= cosine_threshold
-
+     
+        # Скалярное произведение и косинусное сходство
+        dot_product = np.dot(img_array, target_rgb)
+        cosine_similarity = dot_product / (img_norm * target_norm + 1e-8)
+        
+        # Порог косинусного сходства
+        mask = cosine_similarity > 0.9
         total_mask = total_mask | mask
-
+        Smiles.append(color_name)
     # Применяем все маски
     result_array[total_mask] = img_array[total_mask].astype(np.uint8)
-
     result_img = Image.fromarray(result_array)
+    print (f"Использованные SMILES : {Smiles}")
+    print (f"Всего SMILES : {len(Smiles)}")
     return result_img
+    
+def painter(picture_path):
+    color_data = parse_colors(log_file_name)
+    quick_color_restore(picture_path, color_data)
