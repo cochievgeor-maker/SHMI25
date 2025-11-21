@@ -584,13 +584,26 @@ def display_single_color(rgb, color_name="Color", size=(5, 2), save_path = None)
 
     plt.show()
 
+def save_name_vector(name, vector, filename="data.txt"):
+    """
+    Сохраняет пару name:vector в файл
+    """
+    try:
+        with open(filename, 'a', encoding='utf-8') as file:
+            # Преобразуем вектор в строку и сохраняем
+            vector_str = str(vector).replace('\n', ' ')
+            file.write(f"{name}: {vector_str}\n")
+        print(f"Сохранено: {name}: {vector}")
+    except Exception as e:
+        print(f"Ошибка сохранения: {e}")
 
 def homo_lumo_color():
     smiles = input("Введите SMILES строку (например, CCO для этанола): ").strip()
     res = run_calculation_interactive(smiles)
     re = gap_to_wavenumber_and_color(res["homo_lumo_gap_hartree"])
-    
-    return display_single_color(re['rgb_color'], save_path = os.path.join("./output/", smiles))
+    # save_name_vector(smiles, re['rgb_color'])
+    display_single_color(re['rgb_color'], save_path = os.path.join("./output/", smiles))
+    return re['rgb_color']
 # -*- coding: utf-8 -*-
 """Stable Diffusion с выбором моделей"""
 
