@@ -32,20 +32,20 @@ def install_xtb():
         os.environ['PATH'] = '/usr/local/xtb-6.6.0/bin:' + os.environ['PATH']
         os.environ['XTBPATH'] = '/usr/local/xtb-6.6.0'
 
-        print("✓ xTB installed successfully!")
+        print("✓ xTB установлен успешно!")
         return True
     except Exception as e:
-        print(f"✗ Failed to install xTB: {e}")
+        print(f"✗ ошибка установки xTB: {e}")
         return False
 def check_xtb_installation():
     """Check if xTB is installed and available"""
     try:
         result = subprocess.run(["which", "xtb"], capture_output=True, text=True)
         if result.returncode == 0:
-            print("✓ xTB is already installed")
+            print("✓ xTB уже установлен!")
             return True
         else:
-            print("xTB not found, installing...")
+            print("xTB не найден, установка...")
             return install_xtb()
     except Exception as e:
         print(f"Error checking xTB installation: {e}")
@@ -73,21 +73,21 @@ def smiles_to_xtb_calculation(smiles, calculation_type='sp', charge=0, spin=1,
     os.makedirs(output_dir, exist_ok=True)
 
     # Generate molecule from SMILES
-    print(f"Processing SMILES: {smiles}")
+    print(f"Обработка SMILES: {smiles}")
     mol = Chem.MolFromSmiles(smiles)
 
     if mol is None:
-        raise ValueError(f"Invalid SMILES string: {smiles}")
+        raise ValueError(f"Плохо написанный SMILES: {smiles}")
 
     # Add hydrogens
     mol = Chem.AddHs(mol)
 
     # Generate 3D coordinates
-    print("Generating 3D coordinates...")
+    print("Генерация 3D координат...")
     AllChem.EmbedMolecule(mol, randomSeed=42)
 
     # Optimize with MMFF94
-    print("Performing MMFF94 optimization...")
+    print("Оптимизация с MMFF94...")
     AllChem.MMFFOptimizeMolecule(mol)
 
     # Generate molecule name from SMILES
@@ -99,7 +99,7 @@ def smiles_to_xtb_calculation(smiles, calculation_type='sp', charge=0, spin=1,
     # Write XYZ file
     with open(xyz_file, 'w') as f:
         f.write(f"{mol.GetNumAtoms()}\n")
-        f.write(f"Generated from SMILES: {smiles}\n")
+        f.write(f"Сгенерированно из SMILES: {smiles}\n")
 
         conf = mol.GetConformer()
         for i, atom in enumerate(mol.GetAtoms()):
@@ -107,13 +107,13 @@ def smiles_to_xtb_calculation(smiles, calculation_type='sp', charge=0, spin=1,
             symbol = atom.GetSymbol()
             f.write(f"{symbol} {pos.x:.6f} {pos.y:.6f} {pos.z:.6f}\n")
 
-    print(f"Saved geometry to: {xyz_file}")
+    print(f"Геметрия сохранена в: {xyz_file}")
 
     # Save molecule image
     img_file = os.path.join(output_dir, f"{mol_name}.png")
     img = Draw.MolToImage(mol, size=(300, 300))
     img.save(img_file)
-    print(f"Saved molecule image to: {img_file}")
+    print(f"Изображение молекулы сохранено в : {img_file}")
 
     # Display molecule image in Colab
     try:
@@ -134,7 +134,7 @@ def smiles_to_xtb_calculation(smiles, calculation_type='sp', charge=0, spin=1,
 
 def run_xtb_single_point(xyz_file, charge=0, spin=1, solvent=None, output_dir="."):
     """Run single-point energy calculation"""
-    print("Running single-point energy calculation...")
+    print("Начинаем single-point рассчет энергии...")
 
     # Use list-based command for better security and compatibility
     cmd = ["xtb", os.path.basename(xyz_file), "--sp", "--chrg", str(charge), "--uhf", str(spin-1)]
@@ -161,8 +161,8 @@ def run_xtb_single_point(xyz_file, charge=0, spin=1, solvent=None, output_dir=".
             f.write(result.stdout)
 
         if result.returncode == 0:
-            print("✓ Single-point calculation completed!")
-            print(f"Output saved to: {log_file}")
+            print("✓ Single-point рассчеты завершены!")
+            print(f"Результат сохранён в: {log_file}")
             return parse_xtb_output(result.stdout)
         else:
             print("✗ Single-point calculation failed!")
@@ -333,43 +333,34 @@ def parse_xtb_output(output):
 
     return results
 
-def run_calculation_interactive():
+def run_calculation_interactive(smiles = None):
     """Interactive function for Google Colab - gets input from user"""
 
     print("=" * 60)
     print("xTB Calculation from SMILES")
     print("=" * 60)
-
+    
     # First check and install xTB if needed
     if not check_xtb_installation():
         print("Failed to install xTB. Please install it manually.")
         return
 
     # Interactive input for Colab
-    smiles = input("Enter SMILES string (e.g., CCO for ethanol): ").strip()
+    # smiles = input("Введите SMILES строку (например, CCO для этанола): ").strip()
 
-    print("\nAvailable calculation types:")
-    print("  sp   - Single-point energy")
-    print("  opt  - Geometry optimization")
-    print("  freq - Frequency calculation")
+    calculation = 'sp'
 
-    calculation = input("Choose calculation type [sp/opt/freq] (default: sp): ").strip()
-    if not calculation:
-        calculation = 'sp'
-
-    print("Molecular charge default: 0")
     charge = 0
 
-    print("Spin multiplicity default: 1")
     spin = 1
 
-    solvent = input("Solvent for GBSA model (e.g., water, methanol) [optional]: ").strip()
-    if not solvent:
-        solvent = None
+    # solvent = input("Solvent for GBSA model (e.g., water, methanol) [optional]: ").strip()
+    # if not solvent:
+    solvent = None
 
-    output_dir = input("Output directory (default: './output'): ").strip()
-    if not output_dir:
-        output_dir = "./output"
+    
+    output_dir = "./output/" + str(smiles) + "/"
+    print (f"Результаты рассчета будут сохранены в {output_dir}")
 
     try:
         # Run the calculation
@@ -385,7 +376,7 @@ def run_calculation_interactive():
         # Print results
         if results:
             print("\n" + "="*50)
-            print("CALCULATION RESULTS")
+            print("Рассчитанные результаты")
             print("="*50)
             for key, value in results.items():
                 print(f"{key}: {value}")
@@ -395,9 +386,9 @@ def run_calculation_interactive():
             print("SUMMARY")
             print("="*50)
             if 'total_energy' in results:
-                print(f"Total Energy: {results['total_energy']:.6f} {results.get('energy_units', 'Eh')}")
+                print(f"Общая энергия: {results['total_energy']:.6f} {results.get('energy_units', 'Eh')}")
             if 'homo_lumo_gap' in results:
-                print(f"HOMO-LUMO Gap: {results['homo_lumo_gap']:.4f} {results.get('gap_units', 'eV')}")
+                print(f"HOMO-LUMO переход: {results['homo_lumo_gap']:.4f} {results.get('gap_units', 'eV')}")
             return results
         else:
             print("No results obtained from calculation")
@@ -551,7 +542,7 @@ def wavelength_to_rgb_piecewise(wavelength_nm):
 
     return (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
 
-def display_single_color(rgb, color_name="Color", size=(5, 2)):
+def display_single_color(rgb, color_name="Color", size=(5, 2), save_path = None):
     """
     Display a single color with RGB values
     """
@@ -572,19 +563,28 @@ def display_single_color(rgb, color_name="Color", size=(5, 2)):
     ax.axis('off')
 
     # Add text with RGB values
-    #ax.text(0.5, 0.5, f'{color_name}\nRGB{rgb}',
-    #        ha='center', va='center', fontsize=12,
-    #        color='white' if sum(rgb) < 380 else 'black',
-    #        weight='bold')
-
+    ax.text(0.5, 0.5, f'Твой RGB вектор цвета - {rgb}',
+           ha='center', va='center', fontsize=12,
+           color='white' if sum(rgb) < 380 else 'black',
+           weight='bold')
     plt.tight_layout()
+
+    if save_path:
+        # Create directory if it doesn't exist
+        # os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
+        # Save the figure
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Картинка сохранена в: {save_path}")
+
     plt.show()
 
 
 def homo_lumo_color():
-    res = run_calculation_interactive()
+    smiles = input("Введите SMILES строку (например, CCO для этанола): ").strip()
+    res = run_calculation_interactive(smiles)
     re = gap_to_wavenumber_and_color(res["homo_lumo_gap_hartree"])
-    return display_single_color(re['rgb_color'])
+    
+    return display_single_color(re['rgb_color'], save_path = os.path.join("./output/", smiles))
 # -*- coding: utf-8 -*-
 """Stable Diffusion с выбором моделей"""
 
