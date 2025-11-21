@@ -583,6 +583,8 @@ def display_single_color(rgb, color_name="Color", size=(5, 2)):
 
 def homo_lumo_color():
     res = run_calculation_interactive()
+    re = gap_to_wavenumber_and_color(res["homo_lumo_gap_hartree"])
+    return display_single_color(re['rgb_color'])
 # -*- coding: utf-8 -*-
 """Stable Diffusion с выбором моделей"""
 
