@@ -563,10 +563,16 @@ def display_single_color(rgb, color_name="Color", size=(5, 2), save_path = None)
     ax.axis('off')
 
     # Add text with RGB values
-    ax.text(0.5, 0.5, f'Твой RGB вектор цвета - {rgb}',
-           ha='center', va='center', fontsize=12,
-           color='white' if sum(rgb) < 380 else 'black',
-           weight='bold')
+    # ax.text(0.5, 0.5, f'Твой RGB вектор цвета - {rgb}',
+    #        ha='center', va='center', fontsize=12,
+    #        color='white' if sum(rgb) < 380 else 'black',
+    #        weight='bold')
+    ax.set_title(f'Твой RGB вектор цвета - {rgb}', 
+             fontsize=10,  # Размер шрифта заголовка
+             color='black',  # Цвет заголовка
+             weight='bold',  # Жирность
+             pad=20)  # Отступ от графика
+
     plt.tight_layout()
 
     if save_path:
