@@ -842,6 +842,7 @@ def main_interface():
 
 import numpy as np
 from PIL import Image
+from IPython.display import display
 
 def quick_color_restore(image_path, colors_to_restore):
     """
@@ -898,8 +899,9 @@ def quick_color_restore(image_path, colors_to_restore):
     result_img = Image.fromarray(result_array)
     print (f"Использованные SMILES : {Smiles}")
     print (f"Всего SMILES : {len(Smiles)}")
+    display(result_img)
     return result_img
     
 def painter(picture_path):
     color_data = parse_name_tuples(log_file_name)
-    quick_color_restore(picture_path, color_data)
+    return quick_color_restore(picture_path, color_data)
