@@ -555,7 +555,7 @@ def wavelength_to_rgb_piecewise(wavelength_nm):
 
     return (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
 
-def display_single_color(rgb, color_name="Color", size=(5, 2)):
+def display_single_color(rgb, color_name="Color", size=(5, 2), save_path = None):
     """
     Display a single color with RGB values
     """
@@ -576,14 +576,87 @@ def display_single_color(rgb, color_name="Color", size=(5, 2)):
     ax.axis('off')
 
     # Add text with RGB values
-    #ax.text(0.5, 0.5, f'{color_name}\nRGB{rgb}',
+    # ax.text(0.5, 0.5, f'Твой RGB вектор цвета - {rgb}',
     #        ha='center', va='center', fontsize=12,
     #        color='white' if sum(rgb) < 380 else 'black',
     #        weight='bold')
+    ax.set_title(f'Твой RGB вектор цвета - {rgb}', 
+             fontsize=10,  # Размер шрифта заголовка
+             color='black',  # Цвет заголовка
+             weight='bold',  # Жирность
+             pad=20)  # Отступ от графика
 
     plt.tight_layout()
+
+    if save_path:
+        # Create directory if it doesn't exist
+        # os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
+        # Save the figure
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Картинка сохранена в: {save_path}")
+
     plt.show()
 
+def save_name_tuple(name, tuple_data, filename="data.txt"):
+    """
+    Сохраняет пару name:tuple в файл
+    """
+    try:
+        # Проверяем существование файла
+        if not os.path.exists(filename):
+            print(f"Файл '{filename}' не существует. Создаем новый.")
+        
+        with open(filename, 'a', encoding='utf-8') as file:
+            file.write(f"{name}: {tuple_data}\n")
+        print(f"Сохранено: {name}: {tuple_data}")
+    except Exception as e:
+        print(f"Ошибка сохранения: {e}")
+
+def parse_name_tuples(filename="data.txt"):
+    """
+    Парсит файл и возвращает словарь {name: tuple}
+    """
+    # Проверяем существование файла перед парсингом
+    if not os.path.exists(filename):
+        print(f"Файл '{filename}' не существует.")
+        return {}
+    
+    result = {}
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            for line_num, line in enumerate(file, 1):
+                line = line.strip()
+                if line and ':' in line:
+                    name, tuple_str = line.split(':', 1)
+                    name = name.strip()
+                    tuple_str = tuple_str.strip()
+                    
+                    # Парсим tuple из строки
+                    try:
+                        import ast
+                        parsed_data = ast.literal_eval(tuple_str)
+                        if not isinstance(parsed_data, tuple):
+                            parsed_data = tuple(parsed_data)
+                        result[name] = parsed_data
+                    except (ValueError, SyntaxError) as e:
+                        print(f"Ошибка парсинга tuple в строке {line_num}: {e}")
+                        continue
+        return result
+    except Exception as e:
+        print(f"Ошибка чтения: {e}")
+        return {}
+        
+log_file_name = os.path.join("./", "log.txt")
+
+def homo_lumo_color():
+    smiles = input("Введите SMILES строку (например, CCO для этанола): ").strip()
+    res = run_calculation_interactive(smiles)
+    re = gap_to_wavenumber_and_color(res["homo_lumo_gap_hartree"])
+
+    save_name_tuple(smiles, re['rgb_color'], filename = log_file_name)
+    
+    display_single_color(re['rgb_color'], save_path = os.path.join("./output/", smiles))
+    return re['rgb_color']
 # -*- coding: utf-8 -*-
 """Stable Diffusion с выбором моделей"""
 
