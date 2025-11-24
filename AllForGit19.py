@@ -967,7 +967,7 @@ def quick_color_restore(image_path, colors_to_restore):
         cosine_similarity = dot_product / (img_norm * target_norm + 1e-8)
         
         # Порог косинусного сходства
-        mask = cosine_similarity > 0.9
+        mask = cosine_similarity > 0.94
         total_mask = total_mask | mask
         Smiles.append(color_name)
     # Применяем все маски
