@@ -980,4 +980,4 @@ def quick_color_restore(image_path, colors_to_restore):
     
 def painter(picture_path):
     color_data = parse_name_tuples(log_file_name)
-    return quick_color_restore(picture_path, color_data)
+    quick_color_restore(picture_path, color_data)
