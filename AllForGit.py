@@ -7,11 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1VkowldIhXLoI0RJyPe40v0xlUuFt26BR
 """
 
-def lib_install():
-  !pip install rdkit
-  !apt-get install xtb
-  !pip install diffusers transformers accelerate torch --quiet
-
 import subprocess
 import os
 import sys
