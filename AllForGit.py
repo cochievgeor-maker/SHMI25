@@ -333,43 +333,34 @@ def parse_xtb_output(output):
 
     return results
 
-def run_calculation_interactive():
+def run_calculation_interactive(smiles = None):
     """Interactive function for Google Colab - gets input from user"""
 
     print("=" * 60)
     print("xTB Calculation from SMILES")
     print("=" * 60)
-
+    
     # First check and install xTB if needed
     if not check_xtb_installation():
         print("Failed to install xTB. Please install it manually.")
         return
 
     # Interactive input for Colab
-    smiles = input("Enter SMILES string (e.g., CCO for ethanol): ").strip()
+    # smiles = input("Введите SMILES строку (например, CCO для этанола): ").strip()
 
-    print("\nAvailable calculation types:")
-    print("  sp   - Single-point energy")
-    print("  opt  - Geometry optimization")
-    print("  freq - Frequency calculation")
+    calculation = 'sp'
 
-    calculation = input("Choose calculation type [sp/opt/freq] (default: sp): ").strip()
-    if not calculation:
-        calculation = 'sp'
+    charge = 0
 
-    charge_str = input("Molecular charge (default: 0): ").strip()
-    charge = int(charge_str) if charge_str else 0
+    spin = 1
 
-    spin_str = input("Spin multiplicity (default: 1): ").strip()
-    spin = int(spin_str) if spin_str else 1
+    # solvent = input("Solvent for GBSA model (e.g., water, methanol) [optional]: ").strip()
+    # if not solvent:
+    solvent = None
 
-    solvent = input("Solvent for GBSA model (e.g., water, methanol) [optional]: ").strip()
-    if not solvent:
-        solvent = None
-
-    output_dir = input("Output directory (default: './output'): ").strip()
-    if not output_dir:
-        output_dir = "./output"
+    
+    output_dir = "./output/" + str(smiles) + "/"
+    print (f"Результаты рассчета будут сохранены в {output_dir}")
 
     try:
         # Run the calculation
@@ -385,7 +376,7 @@ def run_calculation_interactive():
         # Print results
         if results:
             print("\n" + "="*50)
-            print("CALCULATION RESULTS")
+            print("Рассчитанные результаты")
             print("="*50)
             for key, value in results.items():
                 print(f"{key}: {value}")
@@ -395,9 +386,10 @@ def run_calculation_interactive():
             print("SUMMARY")
             print("="*50)
             if 'total_energy' in results:
-                print(f"Total Energy: {results['total_energy']:.6f} {results.get('energy_units', 'Eh')}")
+                print(f"Общая энергия: {results['total_energy']:.6f} {results.get('energy_units', 'Eh')}")
             if 'homo_lumo_gap' in results:
-                print(f"HOMO-LUMO Gap: {results['homo_lumo_gap']:.4f} {results.get('gap_units', 'eV')}")
+                print(f"HOMO-LUMO переход: {results['homo_lumo_gap']:.4f} {results.get('gap_units', 'eV')}")
+            return results
         else:
             print("No results obtained from calculation")
 
